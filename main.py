@@ -54,7 +54,7 @@ if __name__ == '__main__':
     elements_count = end_index - start_index
     result = []
     print("リクエストする配列の総数" + str(len(sentences)))
-    while(end_index < len(sentences) and call_api_count <= max_call_api_count):
+    while(end_index <= len(sentences) and call_api_count <= max_call_api_count):
         length_sentences = len(''.join(temp_sentences))
         if(length_sentences < max_word and elements_count < max_elements_count and end_index <= len(sentences)):
             end_index += 1
