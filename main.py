@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     # 定数
     max_word = 1800
-    max_call_api_count = 3
+    max_call_api_count = 150
     max_elements_count = 20
     # 青空文庫のURL
     aozora_html = 'https://www.aozora.gr.jp/cards/000148/files/773_14560.html'
@@ -82,7 +82,7 @@ if __name__ == '__main__':
                 token_id_to = referent.token_id_to
                 # 後続の処理のためにlistの要素数を変更しないように書き換える。
                 anaphor_and_empty = anaphor + ['']*(token_id_to - token_id_from)
-                tokens[sentence_id][token_id_from:(token_id_to + 1)] = anaphor_and_empty
+                tokens[sentence_id][token_id_from: (token_id_to + 1)] = anaphor_and_empty
         # 変更後の文章をファイルに保存する
         with open(result_txt_path, mode='a') as f:
             for token in tokens:
