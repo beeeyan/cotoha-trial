@@ -12,5 +12,4 @@ def get_aocora_sentence(aozora_url):
         script.decompose()
     sentences = [line.strip() for line in main_text.text.splitlines()]
     sentences = [line for line in sentences if line != '']
-    print(len(sentences))
     return sentences
