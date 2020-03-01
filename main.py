@@ -3,13 +3,12 @@
 import os
 import json
 import configparser
+import datetime
 import codecs
-import marshmallow_dataclass
 import cotoha_function as cotoha
 from aozora_scraping import get_aocora_sentence
 from respobj.coreference import Coreference
-from respobj.test import LogItem, Referent
-import time
+from json_to_obj import json_to_coreference
 
 
 
@@ -27,49 +26,65 @@ if __name__ == '__main__':
 
     # 定数
     max_word = 1800
-    max_call_api_count = 6
+    max_call_api_count = 3
     max_elements_count = 20
+    # 青空文庫のURL
+    aozora_html = 'https://www.aozora.gr.jp/cards/000148/files/773_14560.html'
+    # 現在時刻
+    now_date = datetime.datetime.today().strftime("%Y%m%d%H%M%S")
+    # 元のテキストを保存するファイルのパス（任意）
+    origin_txt_path = './result/origin_' + now_date + '.txt'
+    # 結果を保存するファイルのパス（任意）
+    result_txt_path = './result/converted_' + now_date + '.txt'
 
     # COTOHA APIインスタンス生成
     cotoha_api = cotoha.CotohaApi(CLIENT_ID, CLIENT_SECRET, DEVELOPER_API_BASE_URL, ACCESS_TOKEN_PUBLISH_URL)
 
-    # 例文
-    sentence = "太郎は友人です。彼は焼き肉を食べた。"
-    # 夏目漱石「心」
-    sentences = get_aocora_sentence('https://www.aozora.gr.jp/cards/000148/files/773_14560.html')
+    # 青空文庫のテキストの取得
+    sentences = get_aocora_sentence(aozora_html)
+    with open(origin_txt_path, mode='a') as f:
+        for sentence in sentences:
+            f.write(sentence + '\n')
 
-    # 構文解析API実行
-    #result = cotoha_api.userAttribute(sentence)
-
-    # start_index = 1
-    # end_index = 1
-    # call_api_count = 1
-    # temp_sentences = sentences[start_index:end_index]
-    # elements_count = end_index - start_index
-    # while(end_index < len(sentences) and call_api_count <= max_call_api_count):
-    #     length_sentences = len(''.join(temp_sentences))
-    #     print(length_sentences)
-    #     if(length_sentences < max_word and elements_count < max_elements_count and end_index < len(sentences)):
-    #         end_index += 1
-    #     else:
-    #         input_sentences = sentences[start_index:end_index-1]
-    #         print(str(call_api_count) + '回目の通信')
-    #         result = cotoha_api.coreference(input_sentences)
-    #         print(result)
-    #         call_api_count += 1
-    #         start_index = end_index
-    #     temp_sentences = sentences[start_index:end_index]
-    #     elements_count = end_index - start_index
-
-    #バインドのテスト部
-    input_sentences = sentences[1:3]
-    result = cotoha_api.coreference(input_sentences)
-    result_formated = codecs.decode(json.dumps(result),'unicode-escape')
-    print(result_formated)
-    test = marshmallow_dataclass.class_schema( Coreference )().loads(result_formated)
-    print(test)
+    # 初期値
+    start_index = 0
+    end_index = 0
+    call_api_count = 1
+    temp_sentences = sentences[start_index:end_index]
+    elements_count = end_index - start_index
+    result = []
+    print("リクエストする配列の総数" + str(len(sentences)))
+    while(end_index < len(sentences) and call_api_count <= max_call_api_count):
+        length_sentences = len(''.join(temp_sentences))
+        if(length_sentences < max_word and elements_count < max_elements_count and end_index <= len(sentences)):
+            end_index += 1
+        else:
+            input_sentences = sentences[start_index:end_index - 1]
+            print('インデックス : ' + str(start_index) + 'から' + str(end_index) + 'まで')
+            print(str(call_api_count) + '回目の通信')
+            response = cotoha_api.coreference(input_sentences)
+            result.append(json_to_coreference(response))
+            call_api_count += 1
+            start_index = end_index - 1
+        temp_sentences = sentences[start_index:end_index]
+        elements_count = end_index - start_index
     
-
-    # 出力結果を見やすく整形
-    # result_formated = json.dumps(result, indent=4, separators=(',', ': '))
-    # print (codecs.decode(result_formated, 'unicode-escape'))
+    for obj in result:
+        coreferences = obj.result.coreference
+        tokens = obj.result.tokens
+        for coreference in coreferences:
+            anaphor = []
+            # coreference内の最初の照応詞を元にする。
+            anaphor.append(coreference.referents[0].form)
+            for referent in coreference.referents:
+                sentence_id = referent.sentence_id
+                token_id_from = referent.token_id_from
+                token_id_to = referent.token_id_to
+                # 後続の処理のためにlistの要素数を変更しないように書き換える。
+                anaphor_and_empty = anaphor + ['']*(token_id_to - token_id_from)
+                tokens[sentence_id][token_id_from:(token_id_to + 1)] = anaphor_and_empty
+        # 変更後の文章をファイルに保存する
+        with open(result_txt_path, mode='a') as f:
+            for token in tokens:
+                line = ''.join(token)
+                f.write(line + '\n')
