@@ -42,6 +42,7 @@ if __name__ == '__main__':
 
     # 青空文庫のテキストの取得
     sentences = get_aocora_sentence(aozora_html)
+    # 比較用に元のテキストを保存
     with open(origin_txt_path, mode='a') as f:
         for sentence in sentences:
             f.write(sentence + '\n')
@@ -52,15 +53,22 @@ if __name__ == '__main__':
     call_api_count = 1
     temp_sentences = sentences[start_index:end_index]
     elements_count = end_index - start_index
+    limit_index = len(sentences)
     result = []
-    print("リクエストする配列の総数" + str(len(sentences)))
-    while(end_index <= len(sentences) and call_api_count <= max_call_api_count):
+    print("リクエストする配列の総数" + str(limit_index))
+    while(end_index <= limit_index and call_api_count <= max_call_api_count):
         length_sentences = len(''.join(temp_sentences))
-        if(length_sentences < max_word and elements_count < max_elements_count and end_index <= len(sentences)):
+        if(length_sentences < max_word and elements_count < max_elements_count and end_index < limit_index):
             end_index += 1
         else:
-            input_sentences = sentences[start_index:end_index - 1]
-            print('インデックス : ' + str(start_index) + 'から' + str(end_index) + 'まで')
+            if end_index == limit_index:
+                input_sentences = sentences[start_index:end_index]
+                print('インデックス : ' + str(start_index) + 'から' + str(end_index) + 'まで')
+                # 終了条件
+                end_index += 1
+            else:
+                input_sentences = sentences[start_index:end_index - 1]
+                print('インデックス : ' + str(start_index) + 'から' + str(end_index-1) + 'まで')
             print(str(call_api_count) + '回目の通信')
             response = cotoha_api.coreference(input_sentences)
             result.append(json_to_coreference(response))
@@ -74,7 +82,7 @@ if __name__ == '__main__':
         tokens = obj.result.tokens
         for coreference in coreferences:
             anaphor = []
-            # coreference内の最初の照応詞を元にする。
+            # coreference内の最初の照応詞を元とする。
             anaphor.append(coreference.referents[0].form)
             for referent in coreference.referents:
                 sentence_id = referent.sentence_id
