@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-
 import os
 import json
 import configparser
@@ -9,8 +8,6 @@ import cotoha_function as cotoha
 from aozora_scraping import get_aocora_sentence
 from respobj.coreference import Coreference
 from json_to_obj import json_to_coreference
-
-
 
 if __name__ == '__main__':
     # ソースファイルの場所取得
@@ -29,12 +26,12 @@ if __name__ == '__main__':
     max_call_api_count = 150
     max_elements_count = 20
     # 青空文庫のURL
-    aozora_html = 'https://www.aozora.gr.jp/cards/000148/files/773_14560.html'
+    aozora_html = 'https://www.aozora.gr.jp/cards/001779/files/56690_66103.html'
     # 現在時刻
     now_date = datetime.datetime.today().strftime("%Y%m%d%H%M%S")
-    # 元のテキストを保存するファイルのパス（任意）
+    # 元のテキストを保存するファイルのパス
     origin_txt_path = './result/origin_' + now_date + '.txt'
-    # 結果を保存するファイルのパス（任意）
+    # 結果を保存するファイルのパス
     result_txt_path = './result/converted_' + now_date + '.txt'
 
     # COTOHA APIインスタンス生成
@@ -55,7 +52,7 @@ if __name__ == '__main__':
     elements_count = end_index - start_index
     limit_index = len(sentences)
     result = []
-    print("リクエストする配列の総数" + str(limit_index))
+    print("リストの総数" + str(limit_index))
     while(end_index <= limit_index and call_api_count <= max_call_api_count):
         length_sentences = len(''.join(temp_sentences))
         if(length_sentences < max_word and elements_count < max_elements_count and end_index < limit_index):
